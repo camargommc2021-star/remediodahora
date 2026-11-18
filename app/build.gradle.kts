@@ -12,8 +12,8 @@ android {
         applicationId = "com.meuapp.lembretes"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 3
+        versionName = "3"
     }
 
     // Chave fixa: assim cada APK novo instala por cima do anterior sem apagar seus dados.
@@ -58,6 +58,7 @@ dependencies {
     implementation("androidx.activity:activity-compose:1.10.1")
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.material3:material3")
+    implementation("androidx.compose.material:material-icons-core")
     implementation("androidx.compose.ui:ui-tooling-preview")
     debugImplementation("androidx.compose.ui:ui-tooling")
 }

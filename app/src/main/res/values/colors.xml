@@ -1,3 +1,5 @@
 <resources>
-    <color name="icone_fundo">#2E7D6B</color>
+    <color name="icone_fundo">#183A37</color>
+    <color name="fundo">#EEF2EF</color>
+    <color name="tinta">#183A37</color>
 </resources>

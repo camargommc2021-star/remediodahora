@@ -5,7 +5,8 @@ App Android para lembrar dos remédios e servir de agenda.
 ## O que faz
 - **Remédios**: doses de hoje com o botão "Tomei", nome, dose, horários diários e duração do tratamento.
   Na hora chega uma notificação com o botão "✓ Tomei".
-- **Importar receita em PDF**: toque no botão ou compartilhe o PDF (WhatsApp, e-mail) com o app.
+- **Importar receita em PDF** (em Configurações ⚙): escolha o PDF ou compartilhe-o (WhatsApp, e-mail) com o app.
+  Lê o modelo de receita digital do CFM ("Nome do Medicamento / Concentração / Posologia") e receitas digitadas comuns.
   Ele lê os remédios, monta horários ("de 8 em 8 horas" → 08:00, 16:00, 00:00) e duração ("por 7 dias");
   você confere e cadastra.
 - **Agenda**: calendário do mês, compromissos com data, hora, observação e aviso
@@ -25,3 +26,6 @@ Ele instala por cima do anterior sem apagar seus dados.
 ## Dica importante
 Alguns celulares (Samsung, Xiaomi, Motorola) economizam bateria fechando apps.
 Se os lembretes atrasarem: **Configurações → Apps → Remédio da Hora → Bateria → Sem restrições**.
+
+## Créditos
+Fontes Bitter e Fira Sans, licença SIL Open Font License (arquivos OFL-*.txt).

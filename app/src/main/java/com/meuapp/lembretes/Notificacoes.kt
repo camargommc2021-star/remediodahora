@@ -58,6 +58,7 @@ object Notificacoes {
         val texto = if (r.dose.isBlank()) "Horário das $hora" else "${r.dose} • $hora"
         val n = NotificationCompat.Builder(ctx, CANAL_REMEDIOS)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFF183A37.toInt())
             .setContentTitle("Hora do remédio: ${r.nome}")
             .setContentText(texto)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -80,6 +81,7 @@ object Notificacoes {
         val texto = if (c.obs.isBlank()) quando else "$quando • ${c.obs}"
         val n = NotificationCompat.Builder(ctx, CANAL_AGENDA)
             .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFF183A37.toInt())
             .setContentTitle(c.titulo)
             .setContentText(texto)
             .setStyle(NotificationCompat.BigTextStyle().bigText(texto))
