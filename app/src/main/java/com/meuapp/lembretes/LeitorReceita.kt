@@ -121,8 +121,7 @@ object LeitorReceita {
             .trim(' ', '-', ',', ':', ';', '–')
         if (nome.isBlank()) nome = l.replace(Regex("[-_.…]{3,}.*$"), "").trim()
         // Primeira letra maiúscula, resto como veio (mantém siglas)
-        if (nome == nome.uppercase()) nome = nome.lowercase().replaceFirstChar { it.uppercase() }
-        return nome to concentracao
+        return arrumarMaiusculas(nome) to concentracao
     }
 
     private fun hora(h: Int) = String.format(Locale.ROOT, "%02d:00", ((h % 24) + 24) % 24)
@@ -190,8 +189,65 @@ object LeitorReceita {
         return Triple(dose, horarios, dias)
     }
 
+    private val minusculas = setOf("de", "da", "do", "das", "dos", "e", "com")
+
+    /** "GLIFAGE XR" -> "Glifage XR", "BESILATO DE ANLODIPINO" -> "Besilato de Anlodipino" */
+    private fun arrumarMaiusculas(nome: String): String {
+        if (nome != nome.uppercase()) return nome
+        return nome.lowercase().split(" ").mapIndexed { i, w ->
+            when {
+                w.isEmpty() -> w
+                i > 0 && w in minusculas -> w
+                w.length <= 2 -> w.uppercase()
+                else -> w.replaceFirstChar { it.uppercase() }
+            }
+        }.joinToString(" ")
+    }
+
+    private fun montar(n: Int, nomeBruto: String, concentracao: String, posologia: String): Remedio {
+        val nome = arrumarMaiusculas(nomeBruto.replace(Regex("\\s+"), " ").trim(' ', '-', ',', ':', ';', '.'))
+        val (qtd, horarios, dias) = interpretarPosologia(posologia)
+        val dose = listOf(qtd, concentracao).filter { it.isNotBlank() }.joinToString(" de ")
+        return Remedio(
+            id = -(n + 1).toLong(),
+            nome = nome,
+            dose = dose,
+            horarios = horarios,
+            fim = dias?.let { LocalDate.now().plusDays((it - 1).toLong()).toString() }
+        )
+    }
+
+    // Receita no modelo com campos: "Nome do Medicamento:", "Concentração:", "Posologia:" (ex.: CFM, Memed)
+    private val reRotuloNome = Regex("(?im)(?:nome\\s+do\\s+medicamento|^\\s*medicamento)\\s*:")
+    private val reRotulos = Regex(
+        "(?i)concentra[cç][aã]o\\s*:|quantidade\\s*:|posologia\\s*:|forma\\s+farmac[eê]utica\\s*:|via\\s*:|\\n"
+    )
+    private val reRodape = Regex(
+        "(?i)receitu[aá]rio\\s|assinado\\s+digitalmente|receita\\s+simples|receita\\s+de\\s+controle|https?://"
+    )
+
+    private fun interpretarComCampos(texto: String): List<Remedio> {
+        val marcas = reRotuloNome.findAll(texto).toList()
+        if (marcas.isEmpty()) return emptyList()
+        return marcas.mapIndexed { n, m ->
+            val fimTrecho = marcas.getOrNull(n + 1)?.range?.first ?: texto.length
+            var trecho = texto.substring(m.range.last + 1, fimTrecho)
+            reRodape.find(trecho)?.let { trecho = trecho.substring(0, it.range.first) }
+
+            val nome = trecho.split(reRotulos).firstOrNull { it.isNotBlank() } ?: ""
+            val conc = Regex("(?i)concentra[cç][aã]o\\s*:\\s*([^\\n]*)").find(trecho)
+                ?.groupValues?.get(1)?.let { reDose.find(it)?.value?.replace(Regex("\\s+"), " ") } ?: ""
+            val posologia = Regex("(?i)posologia\\s*:\\s*([\\s\\S]*)").find(trecho)?.groupValues?.get(1) ?: trecho
+            montar(n, nome, conc, posologia)
+        }.filter { it.nome.length >= 3 }
+            .distinctBy { semAcento(it.nome) }
+    }
+
     /** Transforma o texto da receita em uma lista de remédios para a pessoa conferir. */
     fun interpretar(texto: String): List<Remedio> {
+        val comCampos = interpretarComCampos(texto)
+        if (comCampos.isNotEmpty()) return comCampos
+
         val linhas = texto.lines().map { it.replace('\t', ' ').trim() }.filter { it.isNotBlank() }
         val inicios = linhas.indices.filter { pareceRemedio(linhas[it]) }
         val hoje = LocalDate.now()
