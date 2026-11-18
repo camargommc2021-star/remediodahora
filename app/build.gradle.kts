@@ -12,29 +12,38 @@ android {
         applicationId = "com.meuapp.lembretes"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "4"
+        versionCode = 5
+        versionName = "5"
     }
 
-    // Chave fixa: assim cada APK novo instala por cima do anterior sem apagar seus dados.
+    // A chave fica criptografada no repositório (app/assinatura.jks.enc).
+    // O GitHub abre com o Secret ASSINATURA_SENHA e passa o caminho e a senha por variáveis.
+    val arquivoChave = System.getenv("ASSINATURA_ARQUIVO")
+    val senhaChave = System.getenv("ASSINATURA_SENHA")
+
     signingConfigs {
         create("fixa") {
-            storeFile = file("assinatura.jks")
-            storePassword = "remedio123"
-            keyAlias = "remedio"
-            keyPassword = "remedio123"
+            if (arquivoChave != null && senhaChave != null) {
+                storeFile = file(arquivoChave)
+                storePassword = senhaChave
+                keyAlias = "remedio"
+                keyPassword = senhaChave
+            }
         }
     }
 
     buildTypes {
-        debug {
-            signingConfig = signingConfigs.getByName("fixa")
-        }
         release {
             isMinifyEnabled = false
+            isDebuggable = false
             signingConfig = signingConfigs.getByName("fixa")
         }
     }
+
+    lint {
+        checkReleaseBuilds = false
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17

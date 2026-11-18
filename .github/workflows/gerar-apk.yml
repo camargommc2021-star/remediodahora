@@ -21,11 +21,26 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Compilar
+      - name: Abrir a chave de assinatura
+        env:
+          ASSINATURA_SENHA: ${{ secrets.ASSINATURA_SENHA }}
         run: |
+          if [ -z "$ASSINATURA_SENHA" ]; then
+            echo "::error::Falta o Secret ASSINATURA_SENHA (Settings > Secrets and variables > Actions)."
+            exit 1
+          fi
+          openssl enc -d -aes-256-cbc -pbkdf2 -iter 200000 \
+            -in app/assinatura.jks.enc -out "$RUNNER_TEMP/chave.jks" -pass env:ASSINATURA_SENHA
+
+      - name: Compilar versão final
+        env:
+          ASSINATURA_SENHA: ${{ secrets.ASSINATURA_SENHA }}
+        run: |
+          export ASSINATURA_ARQUIVO="$RUNNER_TEMP/chave.jks"
           chmod +x gradlew
-          ./gradlew assembleDebug --stacktrace
-          cp app/build/outputs/apk/debug/app-debug.apk RemedioDaHora.apk
+          ./gradlew assembleRelease --stacktrace
+          cp app/build/outputs/apk/release/app-release.apk RemedioDaHora.apk
+          rm -f "$RUNNER_TEMP/chave.jks"
 
       - name: Guardar APK
         uses: actions/upload-artifact@v4
