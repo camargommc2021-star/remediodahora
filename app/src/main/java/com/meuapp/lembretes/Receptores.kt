@@ -16,10 +16,10 @@ class AlarmReceiver : BroadcastReceiver() {
                 val r = Dados.remedios.value.find { it.id == id } ?: return
                 if (hora !in r.horarios) return
                 val hoje = LocalDate.now().toString()
-                if (Dados.chave(id, hoje, hora) !in Dados.tomados.value) {
+                if (r.ativoEm(hoje) && Dados.chave(id, hoje, hora) !in Dados.tomados.value) {
                     Notificacoes.mostrarRemedio(ctx, r, hoje, hora)
                 }
-                Agendador.agendarHorario(ctx, id, hora) // próximo dia
+                Agendador.agendarHorario(ctx, r, hora) // próximo dia
             }
             Agendador.ACAO_COMPROMISSO -> {
                 val c = Dados.compromissos.value.find { it.id == id } ?: return

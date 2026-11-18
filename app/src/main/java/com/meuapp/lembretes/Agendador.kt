@@ -32,14 +32,16 @@ object Agendador {
     // ---------- Remédios (todo dia, nos horários escolhidos) ----------
 
     fun agendarRemedio(ctx: Context, r: Remedio) {
-        r.horarios.forEach { agendarHorario(ctx, r.id, it) }
+        r.horarios.forEach { agendarHorario(ctx, r, it) }
     }
 
-    fun agendarHorario(ctx: Context, id: Long, hora: String) {
+    fun agendarHorario(ctx: Context, r: Remedio, hora: String) {
+        val id = r.id
         val t = LocalTime.parse(hora)
         var quando = LocalDateTime.of(LocalDate.now(), t)
         // margem de 30 s evita repetir o mesmo alarme se ele disparar um pouco adiantado
         if (!quando.isAfter(LocalDateTime.now().plusSeconds(30))) quando = quando.plusDays(1)
+        if (!r.ativoEm(quando.toLocalDate().toString())) return // tratamento terminou
         val intent = Intent(ctx, AlarmReceiver::class.java).apply {
             action = ACAO_REMEDIO
             putExtra(EXTRA_ID, id)
