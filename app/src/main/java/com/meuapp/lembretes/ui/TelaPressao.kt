@@ -16,7 +16,14 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Share
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -39,34 +46,17 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.meuapp.lembretes.ClassificacaoPressao
 import com.meuapp.lembretes.Dados
+import com.meuapp.lembretes.ExportarPressao
 import com.meuapp.lembretes.Medicao
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
-// ================= Classificação (Diretriz Brasileira de Hipertensão, SBC 2020) =================
-
-private val faixas = listOf(
-    "Ótima",
-    "Normal",
-    "Pré-hipertensão",
-    "Hipertensão estágio 1",
-    "Hipertensão estágio 2",
-    "Hipertensão estágio 3"
-)
-
-/** Retorna o nível 0..5; vale a maior faixa entre sistólica e diastólica. */
-fun nivelPressao(s: Int, d: Int): Int {
-    val ns = when {
-        s >= 180 -> 5; s >= 160 -> 4; s >= 140 -> 3; s >= 130 -> 2; s >= 120 -> 1; else -> 0
-    }
-    val nd = when {
-        d >= 110 -> 5; d >= 100 -> 4; d >= 90 -> 3; d >= 85 -> 2; d >= 80 -> 1; else -> 0
-    }
-    return maxOf(ns, nd)
-}
+private val faixas = ClassificacaoPressao.faixas
+fun nivelPressao(s: Int, d: Int) = ClassificacaoPressao.nivel(s, d)
 
 @Composable
 private fun corNivel(nivel: Int): Color {
@@ -90,9 +80,21 @@ fun TelaPressao(abrir: (Medicao) -> Unit, acaoCabecalho: @Composable () -> Unit)
     val semana = LocalDate.now().minusDays(6).toString()
     val ultimos7 = medicoes.filter { it.data >= semana }
     val grafico = medicoes.take(14).reversed()
+    var exportando by remember { mutableStateOf(false) }
 
     LazyColumn(contentPadding = PaddingValues(bottom = 112.dp)) {
-        item { Cabecalho("Pressão", acao = acaoCabecalho) }
+        item {
+            Cabecalho("Pressão", acao = {
+                Row {
+                    if (medicoes.isNotEmpty()) {
+                        IconButton(onClick = { exportando = true }) {
+                            Icon(Icons.Filled.Share, contentDescription = "Exportar medições", tint = extras.apagado)
+                        }
+                    }
+                    acaoCabecalho()
+                }
+            })
+        }
 
         if (ultima == null) {
             item {
@@ -178,6 +180,55 @@ fun TelaPressao(abrir: (Medicao) -> Unit, acaoCabecalho: @Composable () -> Unit)
             }
         }
     }
+
+    if (exportando) DialogoExportar(aoFechar = { exportando = false })
+}
+
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun DialogoExportar(aoFechar: () -> Unit) {
+    val ctx = LocalContext.current
+    var dias by remember { mutableStateOf<Int?>(30) }
+    var pdf by remember { mutableStateOf(true) }
+    var aviso by remember { mutableStateOf<String?>(null) }
+    AlertDialog(
+        onDismissRequest = aoFechar,
+        containerColor = LocalExtras.current.papel,
+        title = { Text("Exportar pressão", style = MaterialTheme.typography.titleLarge) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TituloCampo("Período")
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        listOf<Pair<Int?, String>>(30 to "30 dias", 90 to "90 dias", null to "Tudo").forEach { (d, rot) ->
+                            Pilula(rot, selecionada = dias == d, aoTocar = { dias = d; aviso = null })
+                        }
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TituloCampo("Formato")
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Pilula("PDF para o médico", selecionada = pdf, aoTocar = { pdf = true })
+                        Pilula("Planilha", selecionada = !pdf, aoTocar = { pdf = false })
+                    }
+                    Text(
+                        if (pdf) "Resumo, gráfico e tabela, pronto para imprimir ou enviar."
+                        else "Arquivo CSV que abre no Excel ou no Google Planilhas.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = LocalExtras.current.apagado
+                    )
+                }
+                aviso?.let { Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                if (ExportarPressao.compartilhar(ctx, dias, pdf)) aoFechar()
+                else aviso = "Nenhuma medição nesse período."
+            }) { Text("Compartilhar") }
+        },
+        dismissButton = { TextButton(onClick = aoFechar) { Text("Cancelar") } }
+    )
 }
 
 private fun quandoAmigavel(m: Medicao): String {
