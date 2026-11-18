@@ -11,8 +11,11 @@ data class Remedio(
     val id: Long,
     val nome: String,
     val dose: String,
-    val horarios: List<String> // "HH:mm", em ordem
-)
+    val horarios: List<String>, // "HH:mm", em ordem
+    val fim: String? = null // último dia de uso "yyyy-MM-dd" (null = uso contínuo)
+) {
+    fun ativoEm(data: String) = fim == null || data <= fim
+}
 
 data class Compromisso(
     val id: Long,
@@ -55,7 +58,8 @@ object Dados {
                 id = o.getLong("id"),
                 nome = o.getString("nome"),
                 dose = o.optString("dose", ""),
-                horarios = (0 until hs.length()).map { hs.getString(it) }
+                horarios = (0 until hs.length()).map { hs.getString(it) },
+                fim = o.optString("fim", "").ifBlank { null }
             )
         }
 
@@ -93,6 +97,7 @@ object Dados {
                 put("nome", r.nome)
                 put("dose", r.dose)
                 put("horarios", JSONArray(r.horarios))
+                if (r.fim != null) put("fim", r.fim)
             })
         }
         val jc = JSONArray()
@@ -113,7 +118,13 @@ object Dados {
             .apply()
     }
 
-    fun novoId(): Long = System.currentTimeMillis()
+    private var ultimoId = 0L
+
+    @Synchronized
+    fun novoId(): Long {
+        ultimoId = maxOf(System.currentTimeMillis(), ultimoId + 1)
+        return ultimoId
+    }
 
     // ---------- Remédios ----------
 
