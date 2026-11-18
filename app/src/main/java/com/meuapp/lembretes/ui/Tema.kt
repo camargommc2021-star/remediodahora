@@ -162,3 +162,28 @@ fun Tema(conteudo: @Composable () -> Unit) {
         )
     }
 }
+
+// ================= Cores dos compromissos =================
+
+data class CorAgenda(val nome: String, val claro: Long, val escuro: Long)
+
+object CoresAgenda {
+    val lista = listOf(
+        CorAgenda("Petróleo", 0xFF1F6F78, 0xFF7CC7CF),
+        CorAgenda("Folha", 0xFF2F7D5B, 0xFF6CC398),
+        CorAgenda("Âmbar", 0xFFC88A12, 0xFFF0B451),
+        CorAgenda("Coral", 0xFFD0614E, 0xFFF29A88),
+        CorAgenda("Azul", 0xFF3F6FC1, 0xFF94B4EE),
+        CorAgenda("Lilás", 0xFF7B5EA7, 0xFFC1A8E6),
+        CorAgenda("Rosa", 0xFFC2527F, 0xFFEE9DBE),
+        CorAgenda("Grafite", 0xFF5E6B68, 0xFFA9B6B2)
+    )
+
+    fun indice(i: Int) = i.coerceIn(0, lista.size - 1)
+}
+
+@Composable
+fun corAgenda(i: Int): Color {
+    val c = CoresAgenda.lista[CoresAgenda.indice(i)]
+    return Color(if (isSystemInDarkTheme()) c.escuro else c.claro)
+}

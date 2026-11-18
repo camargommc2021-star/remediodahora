@@ -81,7 +81,7 @@ object Notificacoes {
         val texto = if (c.obs.isBlank()) quando else "$quando • ${c.obs}"
         val n = NotificationCompat.Builder(ctx, CANAL_AGENDA)
             .setSmallIcon(R.drawable.ic_notification)
-            .setColor(0xFF183A37.toInt())
+            .setColor(com.meuapp.lembretes.ui.CoresAgenda.lista[com.meuapp.lembretes.ui.CoresAgenda.indice(c.cor)].claro.toInt())
             .setContentTitle(c.titulo)
             .setContentText(texto)
             .setStyle(NotificationCompat.BigTextStyle().bigText(texto))

@@ -14,6 +14,10 @@ App Android para lembrar dos remédios e servir de agenda.
 - Os alarmes funcionam com o app fechado e são refeitos depois que o celular reinicia.
 - Tudo fica salvo só no celular.
 
+- **Cores na agenda**: escolha uma cor para cada compromisso.
+- **Pressão** (ligue em Configurações ⚙ → Abas): anote sistólica, diastólica e pulso;
+  veja a classificação, a média de 7 dias e o gráfico da evolução.
+
 ## Como baixar e instalar (pelo celular)
 1. Abra **Releases** nesta página do GitHub (ou `/releases/latest`).
 2. Toque em **RemedioDaHora.apk** para baixar.

@@ -23,8 +23,21 @@ data class Compromisso(
     val data: String, // "yyyy-MM-dd"
     val hora: String, // "HH:mm"
     val obs: String,
-    val avisoMin: Int // minutos antes para avisar
+    val avisoMin: Int, // minutos antes para avisar
+    val cor: Int = 0 // posição na lista de cores da agenda
 )
+
+data class Medicao(
+    val id: Long,
+    val quando: String, // "yyyy-MM-ddTHH:mm"
+    val sistolica: Int,
+    val diastolica: Int,
+    val pulso: Int?,
+    val obs: String
+) {
+    val data: String get() = quando.substring(0, 10)
+    val hora: String get() = quando.substring(11, 16)
+}
 
 /** Guarda tudo no próprio celular (SharedPreferences em JSON). */
 object Dados {
@@ -39,6 +52,12 @@ object Dados {
     // Doses tomadas: "id|yyyy-MM-dd|HH:mm"
     private val _tomados = MutableStateFlow<Set<String>>(emptySet())
     val tomados: StateFlow<Set<String>> = _tomados
+
+    private val _medicoes = MutableStateFlow<List<Medicao>>(emptyList())
+    val medicoes: StateFlow<List<Medicao>> = _medicoes
+
+    private val _mostrarPressao = MutableStateFlow(false)
+    val mostrarPressao: StateFlow<Boolean> = _mostrarPressao
 
     private var carregado = false
 
@@ -73,7 +92,8 @@ object Dados {
                 data = o.getString("data"),
                 hora = o.getString("hora"),
                 obs = o.optString("obs", ""),
-                avisoMin = o.optInt("avisoMin", 15)
+                avisoMin = o.optInt("avisoMin", 15),
+                cor = o.optInt("cor", 0)
             )
         }
 
@@ -82,6 +102,22 @@ object Dados {
         val t = (p.getStringSet("tomados", emptySet()) ?: emptySet())
             .filter { it.split("|").getOrNull(1).orEmpty() >= limite }
             .toSet()
+
+        val listaM = mutableListOf<Medicao>()
+        val jm = JSONArray(p.getString("pressao", "[]") ?: "[]")
+        for (i in 0 until jm.length()) {
+            val o = jm.getJSONObject(i)
+            listaM += Medicao(
+                id = o.getLong("id"),
+                quando = o.getString("quando"),
+                sistolica = o.getInt("sis"),
+                diastolica = o.getInt("dia"),
+                pulso = o.optInt("pulso", -1).takeIf { it > 0 },
+                obs = o.optString("obs", "")
+            )
+        }
+        _medicoes.value = listaM.sortedByDescending { it.quando }
+        _mostrarPressao.value = p.getBoolean("mostrarPressao", false)
 
         _remedios.value = listaR
         _compromissos.value = listaC
@@ -109,9 +145,23 @@ object Dados {
                 put("hora", c.hora)
                 put("obs", c.obs)
                 put("avisoMin", c.avisoMin)
+                put("cor", c.cor)
+            })
+        }
+        val jm = JSONArray()
+        _medicoes.value.forEach { m ->
+            jm.put(JSONObject().apply {
+                put("id", m.id)
+                put("quando", m.quando)
+                put("sis", m.sistolica)
+                put("dia", m.diastolica)
+                if (m.pulso != null) put("pulso", m.pulso)
+                put("obs", m.obs)
             })
         }
         ctx.getSharedPreferences(ARQUIVO, Context.MODE_PRIVATE).edit()
+            .putString("pressao", jm.toString())
+            .putBoolean("mostrarPressao", _mostrarPressao.value)
             .putString("remedios", jr.toString())
             .putString("compromissos", jc.toString())
             .putStringSet("tomados", HashSet(_tomados.value))
@@ -167,6 +217,26 @@ object Dados {
         carregar(ctx)
         Agendador.cancelarCompromisso(ctx, id)
         _compromissos.value = _compromissos.value.filter { it.id != id }
+        salvar(ctx)
+    }
+
+    // ---------- Pressão ----------
+
+    fun salvarMedicao(ctx: Context, m: Medicao) {
+        carregar(ctx)
+        _medicoes.value = (_medicoes.value.filter { it.id != m.id } + m).sortedByDescending { it.quando }
+        salvar(ctx)
+    }
+
+    fun excluirMedicao(ctx: Context, id: Long) {
+        carregar(ctx)
+        _medicoes.value = _medicoes.value.filter { it.id != id }
+        salvar(ctx)
+    }
+
+    fun definirMostrarPressao(ctx: Context, mostrar: Boolean) {
+        carregar(ctx)
+        _mostrarPressao.value = mostrar
         salvar(ctx)
     }
 }

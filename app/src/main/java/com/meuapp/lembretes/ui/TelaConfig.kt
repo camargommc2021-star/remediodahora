@@ -18,7 +18,10 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.Switch
+import androidx.compose.runtime.collectAsState
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -87,6 +90,29 @@ fun TelaConfig(aoVoltar: () -> Unit, aoImportar: () -> Unit) {
                 color = extras.apagado,
                 modifier = Modifier.padding(start = 28.dp, end = 28.dp, top = 10.dp)
             )
+        }
+
+        item { RotuloSecao("Abas") }
+        item {
+            val mostrarPressao by Dados.mostrarPressao.collectAsState()
+            Grupo {
+                Row(
+                    Modifier.fillMaxWidth()
+                        .toggleable(value = mostrarPressao, onValueChange = { Dados.definirMostrarPressao(ctx, it) })
+                        .padding(start = 18.dp, end = 16.dp, top = 12.dp, bottom = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f).padding(end = 12.dp)) {
+                        Text("Pressão arterial", style = MaterialTheme.typography.titleMedium)
+                        Text(
+                            "Mostra uma aba para anotar suas medições e ver a evolução.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = extras.apagado
+                        )
+                    }
+                    Switch(checked = mostrarPressao, onCheckedChange = null)
+                }
+            }
         }
 
         item { RotuloSecao("Lembretes") }

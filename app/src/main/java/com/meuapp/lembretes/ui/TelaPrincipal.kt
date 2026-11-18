@@ -32,7 +32,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.compose.runtime.collectAsState
 import com.meuapp.lembretes.Compromisso
+import com.meuapp.lembretes.Dados
+import com.meuapp.lembretes.Medicao
 import com.meuapp.lembretes.R
 import com.meuapp.lembretes.Remedio
 import java.time.LocalDate
@@ -40,6 +43,7 @@ import java.time.LocalDate
 private sealed class Dialogo {
     data class DeRemedio(val r: Remedio?) : Dialogo()
     data class DeCompromisso(val c: Compromisso?, val data: String) : Dialogo()
+    data class DePressao(val m: Medicao?) : Dialogo()
 }
 
 @Composable
@@ -49,6 +53,8 @@ fun TelaPrincipal(pdfRecebido: Uri?, aoUsarPdfRecebido: () -> Unit) {
     var dialogo by remember { mutableStateOf<Dialogo?>(null) }
     var importando by remember { mutableStateOf<Uri?>(null) }
     var diaSelecionado by rememberSaveable { mutableStateOf(LocalDate.now().toString()) }
+    val mostrarPressao by Dados.mostrarPressao.collectAsState()
+    if (!mostrarPressao && aba == 2) aba = 0
 
     val escolherPdf = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         if (uri != null) importando = uri
@@ -104,19 +110,31 @@ fun TelaPrincipal(pdfRecebido: Uri?, aoUsarPdfRecebido: () -> Unit) {
                             label = { Text("Agenda") },
                             colors = coresItem
                         )
+                        if (mostrarPressao) {
+                            NavigationBarItem(
+                                selected = aba == 2,
+                                onClick = { aba = 2 },
+                                icon = { Icon(painterResource(R.drawable.ic_nav_pressao), contentDescription = null) },
+                                label = { Text("Pressão") },
+                                colors = coresItem
+                            )
+                        }
                     }
                 }
             },
             floatingActionButton = {
                 ExtendedFloatingActionButton(
                     onClick = {
-                        dialogo = if (aba == 0) Dialogo.DeRemedio(null)
-                        else Dialogo.DeCompromisso(null, maxOf(diaSelecionado, LocalDate.now().toString()))
+                        dialogo = when (aba) {
+                            0 -> Dialogo.DeRemedio(null)
+                            1 -> Dialogo.DeCompromisso(null, maxOf(diaSelecionado, LocalDate.now().toString()))
+                            else -> Dialogo.DePressao(null)
+                        }
                     },
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                     icon = { Icon(Icons.Filled.Add, contentDescription = null) },
-                    text = { Text(if (aba == 0) "Remédio" else "Compromisso") }
+                    text = { Text(when (aba) { 0 -> "Remédio"; 1 -> "Compromisso"; else -> "Medição" }) }
                 )
             }
         ) { espaco ->
@@ -124,6 +142,11 @@ fun TelaPrincipal(pdfRecebido: Uri?, aoUsarPdfRecebido: () -> Unit) {
                 if (aba == 0) {
                     TelaRemedios(
                         abrir = { dialogo = Dialogo.DeRemedio(it) },
+                        acaoCabecalho = botaoConfig
+                    )
+                } else if (aba == 2) {
+                    TelaPressao(
+                        abrir = { dialogo = Dialogo.DePressao(it) },
                         acaoCabecalho = botaoConfig
                     )
                 } else {
@@ -150,6 +173,7 @@ fun TelaPrincipal(pdfRecebido: Uri?, aoUsarPdfRecebido: () -> Unit) {
     when (val d = dialogo) {
         is Dialogo.DeRemedio -> FormRemedio(d.r, ehNovo = d.r == null, aoFechar = { dialogo = null })
         is Dialogo.DeCompromisso -> FormCompromisso(d.c, d.data, aoFechar = { dialogo = null })
+        is Dialogo.DePressao -> FormPressao(d.m, aoFechar = { dialogo = null })
         null -> {}
     }
 }

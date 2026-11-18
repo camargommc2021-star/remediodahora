@@ -1,6 +1,13 @@
 package com.meuapp.lembretes.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -167,6 +174,7 @@ fun FormCompromisso(inicial: Compromisso?, dataInicial: String, aoFechar: () -> 
     var hora by remember { mutableStateOf(inicial?.hora ?: horaPadrao) }
     var obs by remember { mutableStateOf(inicial?.obs ?: "") }
     var aviso by remember { mutableIntStateOf(inicial?.avisoMin ?: 60) }
+    var cor by remember { mutableIntStateOf(inicial?.cor ?: 0) }
     var confirmarExclusao by remember { mutableStateOf(false) }
 
     FolhaCheia(
@@ -177,7 +185,7 @@ fun FormCompromisso(inicial: Compromisso?, dataInicial: String, aoFechar: () -> 
         aoAgir = {
             Dados.salvarCompromisso(
                 ctx,
-                Compromisso(inicial?.id ?: Dados.novoId(), titulo.trim(), data, hora, obs.trim(), aviso)
+                Compromisso(inicial?.id ?: Dados.novoId(), titulo.trim(), data, hora, obs.trim(), aviso, cor)
             )
             aoFechar()
         }
@@ -198,6 +206,18 @@ fun FormCompromisso(inicial: Compromisso?, dataInicial: String, aoFechar: () -> 
         }
 
         CampoTexto(obs, { obs = it }, "Observação (opcional)", umaLinha = false)
+
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            TituloCampo("Cor: ${CoresAgenda.lista[CoresAgenda.indice(cor)].nome}")
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                CoresAgenda.lista.indices.forEach { i ->
+                    EscolhaCor(corAgenda(i), selecionada = cor == i, nome = CoresAgenda.lista[i].nome) { cor = i }
+                }
+            }
+        }
 
         Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
             TituloCampo("Avisar")
@@ -221,6 +241,24 @@ fun FormCompromisso(inicial: Compromisso?, dataInicial: String, aoFechar: () -> 
                 },
                 colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
             ) { Text(if (confirmarExclusao) "Toque de novo para excluir" else "Excluir compromisso") }
+        }
+    }
+}
+
+@Composable
+private fun EscolhaCor(cor: Color, selecionada: Boolean, nome: String, aoTocar: () -> Unit) {
+    val anel = MaterialTheme.colorScheme.onSurface
+    Box(
+        Modifier.size(42.dp).clip(CircleShape)
+            .then(if (selecionada) Modifier.border(2.dp, anel, CircleShape) else Modifier)
+            .clickable(onClickLabel = nome, onClick = aoTocar)
+            .padding(5.dp)
+            .clip(CircleShape)
+            .background(cor),
+        contentAlignment = Alignment.Center
+    ) {
+        if (selecionada) {
+            Icon(Icons.Filled.Check, contentDescription = "$nome escolhida", tint = Color.White, modifier = Modifier.size(18.dp))
         }
     }
 }
