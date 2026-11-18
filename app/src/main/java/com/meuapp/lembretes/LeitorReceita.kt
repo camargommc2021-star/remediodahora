@@ -213,8 +213,17 @@ object LeitorReceita {
             nome = nome,
             dose = dose,
             horarios = horarios,
-            fim = dias?.let { LocalDate.now().plusDays((it - 1).toLong()).toString() }
+            fim = dias?.let { LocalDate.now().plusDays((it - 1).toLong()).toString() },
+            porDose = porDoseDoTexto(qtd)
         )
+    }
+
+    /** "2 comprimidos" -> 2; "meio comprimido" -> 1. Só conta unidades inteiras (comprimido, cápsula...). */
+    fun porDoseDoTexto(dose: String): Int {
+        val t = semAcento(dose)
+        if (!Regex("comprimid|capsul|dragea|sache|envelope|supositorio|ampola|unidade").containsMatchIn(t)) return 1
+        val m = Regex("^\\s*(\\d+|um|uma|dois|duas|tres|quatro)\\b").find(t) ?: return 1
+        return (m.groupValues[1].toIntOrNull() ?: palavrasNumero[m.groupValues[1]] ?: 1).coerceIn(1, 20)
     }
 
     // Receita no modelo com campos: "Nome do Medicamento:", "Concentração:", "Posologia:" (ex.: CFM, Memed)

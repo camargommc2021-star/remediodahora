@@ -93,6 +93,28 @@ object Notificacoes {
         NotificationManagerCompat.from(ctx).notify(Agendador.codigoCompromisso(c.id), n)
     }
 
+    fun mostrarEstoque(ctx: Context, r: Remedio) {
+        if (!podeNotificar(ctx)) return
+        val dias = r.diasDeEstoque() ?: return
+        val sobra = r.estoque ?: return
+        val texto = when {
+            sobra == 0 -> "Acabou. Compre mais para não ficar sem."
+            dias == 0 -> "Sobra $sobra, não dá para amanhã. Compre mais."
+            dias == 1 -> "Sobra $sobra, dá para 1 dia. Hora de comprar."
+            else -> "Sobram $sobra, dá para $dias dias. Hora de comprar."
+        }
+        val n = NotificationCompat.Builder(ctx, CANAL_REMEDIOS)
+            .setSmallIcon(R.drawable.ic_notification)
+            .setColor(0xFFB8740C.toInt())
+            .setContentTitle("${r.nome} está acabando")
+            .setContentText(texto)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(texto))
+            .setContentIntent(abrirApp(ctx))
+            .setAutoCancel(true)
+            .build()
+        NotificationManagerCompat.from(ctx).notify("e${r.id}".hashCode(), n)
+    }
+
     fun cancelar(ctx: Context, codigo: Int) {
         NotificationManagerCompat.from(ctx).cancel(codigo)
     }

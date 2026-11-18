@@ -1,3 +1,10 @@
 <resources>
     <color name="fundo">#0F1C1A</color>
+    <color name="widget_fundo">#172925</color>
+    <color name="widget_tinta">#E4ECE9</color>
+    <color name="widget_apagado">#93A6A1</color>
+    <color name="widget_ambar">#F0B451</color>
+    <color name="widget_folha">#6CC398</color>
+    <color name="widget_botao">#CFE7DC</color>
+    <color name="widget_sobre_botao">#0F1C1A</color>
 </resources>

@@ -35,6 +35,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.meuapp.lembretes.Compromisso
 import com.meuapp.lembretes.Dados
@@ -58,6 +59,9 @@ fun FormRemedio(
     var nome by remember { mutableStateOf(inicial?.nome ?: "") }
     var dose by remember { mutableStateOf(inicial?.dose ?: "") }
     var fim by remember { mutableStateOf(inicial?.fim) }
+    var controlarEstoque by remember { mutableStateOf(inicial?.estoque != null) }
+    var estoque by remember { mutableStateOf(inicial?.estoque?.toString() ?: "") }
+    var porDose by remember { mutableStateOf((inicial?.porDose ?: 1).toString()) }
     val horarios = remember { mutableStateListOf<String>().apply { addAll(inicial?.horarios ?: emptyList()) } }
     var confirmarExclusao by remember { mutableStateOf(false) }
 
@@ -65,14 +69,18 @@ fun FormRemedio(
         titulo = if (ehNovo) "Novo remédio" else "Editar remédio",
         aoFechar = aoFechar,
         rotuloAcao = "Salvar",
-        acaoAtiva = nome.isNotBlank() && horarios.isNotEmpty(),
+        acaoAtiva = nome.isNotBlank() && horarios.isNotEmpty() &&
+            (!controlarEstoque || (estoque.toIntOrNull() != null && (porDose.toIntOrNull() ?: 0) >= 1)),
         aoAgir = {
             val r = Remedio(
                 id = if (inicial != null && inicial.id > 0) inicial.id else Dados.novoId(),
                 nome = nome.trim(),
                 dose = dose.trim(),
                 horarios = horarios.toList().sorted(),
-                fim = fim
+                fim = fim,
+                estoque = if (controlarEstoque) estoque.toIntOrNull() else null,
+                porDose = porDose.toIntOrNull()?.coerceIn(1, 20) ?: 1,
+                avisouEstoque = inicial?.avisouEstoque ?: false
             )
             if (aoSalvar != null) aoSalvar(r) else Dados.salvarRemedio(ctx, r)
             aoFechar()
@@ -132,6 +140,48 @@ fun FormRemedio(
                     aoTocar = {
                         escolherData(ctx, fim ?: LocalDate.now().plusDays(6).toString()) { fim = it }
                     }
+                )
+            }
+        }
+
+        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            TituloCampo("Estoque")
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Pilula("Não controlar", selecionada = !controlarEstoque, aoTocar = { controlarEstoque = false })
+                Pilula("Controlar", selecionada = controlarEstoque, aoTocar = { controlarEstoque = true })
+            }
+            if (controlarEstoque) {
+                Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    CampoTexto(
+                        estoque, { estoque = it.filter(Char::isDigit).take(4) }, "Comprimidos em casa",
+                        Modifier.weight(1.4f), teclado = KeyboardType.Number
+                    )
+                    CampoTexto(
+                        porDose, { porDose = it.filter(Char::isDigit).take(2) }, "Por dose",
+                        Modifier.weight(1f), teclado = KeyboardType.Number
+                    )
+                }
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    listOf(10, 20, 30, 60).forEach { n ->
+                        Pilula("+$n", selecionada = false, aoTocar = {
+                            estoque = ((estoque.toIntOrNull() ?: 0) + n).toString()
+                        })
+                    }
+                }
+                val e = estoque.toIntOrNull()
+                val pd = porDose.toIntOrNull() ?: 0
+                val porDia = pd * horarios.size
+                Text(
+                    when {
+                        e == null -> "Conte quantos comprimidos você tem. Ao comprar uma caixa, use os botões acima para somar."
+                        porDia == 0 -> "Adicione os horários para calcular quanto dura."
+                        else -> "Dá para ${e / porDia} dias. Aviso quando faltarem ${Remedio.DIAS_AVISO_ESTOQUE} dias."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = extras.apagado
                 )
             }
         }

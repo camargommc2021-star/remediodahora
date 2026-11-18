@@ -12,8 +12,8 @@ android {
         applicationId = "com.meuapp.lembretes"
         minSdk = 26
         targetSdk = 35
-        versionCode = 6
-        versionName = "6"
+        versionCode = 7
+        versionName = "7"
     }
 
     // A chave fica criptografada no repositório (app/assinatura.jks.enc).

@@ -2,4 +2,11 @@
     <color name="icone_fundo">#183A37</color>
     <color name="fundo">#EEF2EF</color>
     <color name="tinta">#183A37</color>
+    <color name="widget_fundo">#F7FAF8</color>
+    <color name="widget_tinta">#183A37</color>
+    <color name="widget_apagado">#64776F</color>
+    <color name="widget_ambar">#B8740C</color>
+    <color name="widget_folha">#2F7D5B</color>
+    <color name="widget_botao">#183A37</color>
+    <color name="widget_sobre_botao">#FFFFFF</color>
 </resources>

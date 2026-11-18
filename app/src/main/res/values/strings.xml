@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Remédio da Hora</string>
+    <string name="widget_descricao">Próxima dose com o botão Tomei</string>
 </resources>

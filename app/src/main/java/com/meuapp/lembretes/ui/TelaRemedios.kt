@@ -77,6 +77,29 @@ fun TelaRemedios(abrir: (Remedio) -> Unit, acaoCabecalho: @Composable () -> Unit
             item { Blister(doses = doses, tomados = tomados, feitas = feitas) }
         }
 
+        val acabando = ativos.filter { it.estoqueAcabando() }
+        if (acabando.isNotEmpty()) {
+            item { RotuloSecao("Comprar") }
+            item {
+                Grupo {
+                    acabando.forEachIndexed { i, r ->
+                        if (i > 0) Divisoria()
+                        Row(
+                            Modifier.fillMaxWidth().clickable { abrir(r) }.padding(horizontal = 18.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Box(Modifier.size(10.dp).clip(CircleShape).background(extras.ambar))
+                            Spacer(Modifier.width(12.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(r.nome, style = MaterialTheme.typography.titleMedium)
+                                Text(textoEstoque(r), style = MaterialTheme.typography.bodySmall, color = extras.ambar)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         item { RotuloSecao("Doses do dia") }
         item {
             Grupo {
@@ -177,7 +200,27 @@ private fun ListaRemedios(lista: List<Remedio>, abrir: (Remedio) -> Unit) {
                     if (r.fim != null) append(", até ").append(diaMes(r.fim))
                 }
                 Text(detalhe, style = MaterialTheme.typography.bodySmall, color = extras.apagado)
+                if (r.estoque != null) {
+                    Text(
+                        textoEstoque(r),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (r.estoqueAcabando()) extras.ambar else extras.folha
+                    )
+                }
             }
         }
+    }
+}
+
+fun textoEstoque(r: Remedio): String {
+    val e = r.estoque ?: return ""
+    val dias = r.diasDeEstoque()
+    val unidade = if (e == 1) "comprimido" else "comprimidos"
+    return when {
+        e == 0 -> "Acabou"
+        dias == null -> "$e $unidade em casa"
+        dias == 0 -> "$e $unidade em casa, não dá para amanhã"
+        dias == 1 -> "$e $unidade em casa, dá para 1 dia"
+        else -> "$e $unidade em casa, dá para $dias dias"
     }
 }

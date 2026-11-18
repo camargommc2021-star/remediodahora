@@ -20,6 +20,7 @@ class AlarmReceiver : BroadcastReceiver() {
                     Notificacoes.mostrarRemedio(ctx, r, hoje, hora)
                 }
                 Agendador.agendarHorario(ctx, r, hora) // próximo dia
+                WidgetDose.atualizar(ctx) // "próxima" vira "atrasada" no widget
             }
             Agendador.ACAO_COMPROMISSO -> {
                 val c = Dados.compromissos.value.find { it.id == id } ?: return
@@ -39,5 +40,6 @@ class BootReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         Notificacoes.criarCanais(ctx)
         Agendador.agendarTudo(ctx)
+        WidgetDose.atualizar(ctx)
     }
 }

@@ -19,6 +19,9 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.foundation.selection.toggleable
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Switch
 import androidx.compose.runtime.collectAsState
@@ -49,6 +52,86 @@ import kotlinx.coroutines.withContext
 
 @Composable
 fun TelaConfig(aoVoltar: () -> Unit, aoImportar: () -> Unit) {
+    val ctxBackup = LocalContext.current
+    var restaurando by remember { mutableStateOf<Pair<String, Dados.ResumoBackup>?>(null) }
+
+    val salvarArquivo = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        val ok = try {
+            ctxBackup.contentResolver.openOutputStream(uri, "wt")?.use {
+                it.write(Dados.gerarBackup(ctxBackup).toByteArray(Charsets.UTF_8))
+            } != null
+        } catch (e: Exception) {
+            false
+        }
+        Toast.makeText(
+            ctxBackup,
+            if (ok) "Backup salvo" else "O backup não foi salvo. Tente outra pasta.",
+            Toast.LENGTH_LONG
+        ).show()
+    }
+
+    val abrirArquivo = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        try {
+            val texto = ctxBackup.contentResolver.openInputStream(uri)?.use { it.readBytes().toString(Charsets.UTF_8) }
+                ?: error("vazio")
+            restaurando = texto to Dados.lerResumoBackup(texto)
+        } catch (e: Exception) {
+            Toast.makeText(ctxBackup, "Este arquivo não é um backup do Remédio da Hora.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    TelaConfigConteudo(
+        aoVoltar = aoVoltar,
+        aoImportar = aoImportar,
+        aoSalvarBackup = { salvarArquivo.launch("remedio-da-hora-backup-${java.time.LocalDate.now()}.json") },
+        aoRestaurarBackup = { abrirArquivo.launch(arrayOf("application/json", "application/octet-stream", "text/plain")) }
+    )
+
+    restaurando?.let { (texto, resumo) ->
+        AlertDialog(
+            onDismissRequest = { restaurando = null },
+            containerColor = LocalExtras.current.papel,
+            title = { Text("Restaurar backup?", style = MaterialTheme.typography.titleLarge) },
+            text = {
+                Text(
+                    buildString {
+                        if (resumo.criadoEm.length >= 16) {
+                            append("Backup de ").append(dataCurta(resumo.criadoEm.substring(0, 10)))
+                                .append(" às ").append(resumo.criadoEm.substring(11, 16)).append(", com ")
+                        } else append("Backup com ")
+                        append("${resumo.remedios} remédios, ${resumo.compromissos} compromissos e ${resumo.medicoes} medições de pressão.\n\n")
+                        append("Os dados atuais deste celular serão substituídos.")
+                    },
+                    style = MaterialTheme.typography.bodyLarge
+                )
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    try {
+                        Dados.restaurarBackup(ctxBackup, texto)
+                        Toast.makeText(ctxBackup, "Backup restaurado", Toast.LENGTH_SHORT).show()
+                    } catch (e: Exception) {
+                        Toast.makeText(ctxBackup, "Não deu para restaurar este arquivo.", Toast.LENGTH_LONG).show()
+                    }
+                    restaurando = null
+                }) { Text("Restaurar") }
+            },
+            dismissButton = { TextButton(onClick = { restaurando = null }) { Text("Cancelar") } }
+        )
+    }
+}
+
+@Composable
+private fun TelaConfigConteudo(
+    aoVoltar: () -> Unit,
+    aoImportar: () -> Unit,
+    aoSalvarBackup: () -> Unit,
+    aoRestaurarBackup: () -> Unit
+) {
     val ctx = LocalContext.current
     val extras = LocalExtras.current
     val versao = remember {
@@ -112,6 +195,23 @@ fun TelaConfig(aoVoltar: () -> Unit, aoImportar: () -> Unit) {
                     }
                     Switch(checked = mostrarPressao, onCheckedChange = null)
                 }
+            }
+        }
+
+        item { RotuloSecao("Backup") }
+        item {
+            Grupo {
+                LinhaConfig(
+                    "Salvar backup",
+                    "Cria um arquivo com remédios, agenda e pressão. Guarde no Google Drive.",
+                    aoSalvarBackup
+                )
+                Divisoria()
+                LinhaConfig(
+                    "Restaurar backup",
+                    "Volta os dados de um arquivo salvo antes, por exemplo num celular novo.",
+                    aoRestaurarBackup
+                )
             }
         }
 

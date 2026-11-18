@@ -18,6 +18,10 @@ App Android para lembrar dos remédios e servir de agenda.
 - **Pressão** (ligue em Configurações ⚙ → Abas): anote sistólica, diastólica e pulso;
   veja a classificação, a média de 7 dias e o gráfico da evolução.
 
+- **Estoque**: informe quantos comprimidos tem; o app desconta a cada "Tomei" e avisa quando faltar 7 dias.
+- **Widget**: na tela inicial, mostra a próxima dose (ou a atrasada) com o botão "Tomei".
+- **Backup**: em Configurações, salve um arquivo com tudo e restaure em outro celular.
+
 ## Como baixar e instalar (pelo celular)
 1. Abra **Releases** nesta página do GitHub (ou `/releases/latest`).
 2. Toque em **RemedioDaHora.apk** para baixar.
