@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -223,7 +224,8 @@ fun CampoTexto(
     aoMudar: (String) -> Unit,
     rotulo: String,
     modifier: Modifier = Modifier,
-    umaLinha: Boolean = true
+    umaLinha: Boolean = true,
+    teclado: KeyboardType = KeyboardType.Text
 ) {
     OutlinedTextField(
         value = valor,
@@ -231,7 +233,10 @@ fun CampoTexto(
         label = { Text(rotulo) },
         singleLine = umaLinha,
         shape = MaterialTheme.shapes.medium,
-        keyboardOptions = KeyboardOptions(capitalization = KeyboardCapitalization.Sentences),
+        keyboardOptions = KeyboardOptions(
+            capitalization = if (teclado == KeyboardType.Text) KeyboardCapitalization.Sentences else KeyboardCapitalization.None,
+            keyboardType = teclado
+        ),
         colors = OutlinedTextFieldDefaults.colors(
             unfocusedContainerColor = LocalExtras.current.papel,
             focusedContainerColor = LocalExtras.current.papel,

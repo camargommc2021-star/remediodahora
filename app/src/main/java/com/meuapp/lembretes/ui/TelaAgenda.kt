@@ -4,7 +4,10 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -67,7 +70,8 @@ fun TelaAgenda(
     val mes = YearMonth.parse(mesTexto)
     val hoje = LocalDate.now().toString()
 
-    val diasComEvento = compromissos.map { it.data }.toSet()
+    // cores dos compromissos de cada dia (até 3 pontinhos)
+    val diasComEvento = compromissos.groupBy { it.data }.mapValues { (_, l) -> l.map { it.cor }.distinct().take(3) }
     val doDia = compromissos.filter { it.data == diaSelecionado }
     val proximos = compromissos.filter { it.data >= hoje && it.data != diaSelecionado }.take(8)
 
@@ -127,9 +131,12 @@ fun TelaAgenda(
 private fun LinhaCompromisso(c: Compromisso, mostrarData: Boolean, aoTocar: () -> Unit) {
     val extras = LocalExtras.current
     Row(
-        Modifier.fillMaxWidth().clickable(onClick = aoTocar).padding(start = 18.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)
+        Modifier.fillMaxWidth().height(IntrinsicSize.Min).clickable(onClick = aoTocar)
+            .padding(start = 10.dp, end = 16.dp, top = 14.dp, bottom = 14.dp)
     ) {
-        Column(Modifier.width(74.dp)) {
+        Box(Modifier.width(4.dp).fillMaxHeight().clip(CircleShape).background(corAgenda(c.cor)))
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.width(66.dp)) {
             Text(c.hora, style = EstiloHora)
             if (mostrarData) Text(diaMes(c.data), style = MaterialTheme.typography.labelMedium, color = extras.apagado)
         }
@@ -147,7 +154,7 @@ private fun LinhaCompromisso(c: Compromisso, mostrarData: Boolean, aoTocar: () -
 private fun Calendario(
     mes: YearMonth,
     diaSelecionado: String,
-    diasComEvento: Set<String>,
+    diasComEvento: Map<String, List<Int>>,
     aoMudarMes: (YearMonth) -> Unit,
     aoSelecionar: (String) -> Unit,
     aoIrParaHoje: () -> Unit
@@ -225,15 +232,20 @@ private fun Calendario(
                                                 else -> cores.onSurface
                                             }
                                         )
-                                        Box(
-                                            Modifier.size(5.dp).clip(CircleShape).background(
-                                                when {
-                                                    chave !in diasComEvento -> Color.Transparent
-                                                    selecionado -> cores.onPrimary
-                                                    else -> extras.ambar
-                                                }
-                                            )
-                                        )
+                                        Row(
+                                            Modifier.height(5.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(2.dp)
+                                        ) {
+                                            diasComEvento[chave].orEmpty().forEach { cor ->
+                                                Box(
+                                                    Modifier.size(5.dp).clip(CircleShape).background(corAgenda(cor))
+                                                        .then(
+                                                            if (selecionado) Modifier.border(0.5.dp, cores.onPrimary, CircleShape)
+                                                            else Modifier
+                                                        )
+                                                )
+                                            }
+                                        }
                                     }
                                 }
                             }

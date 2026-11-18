@@ -12,8 +12,8 @@ android {
         applicationId = "com.meuapp.lembretes"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "3"
+        versionCode = 4
+        versionName = "4"
     }
 
     // Chave fixa: assim cada APK novo instala por cima do anterior sem apagar seus dados.
